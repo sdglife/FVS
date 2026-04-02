@@ -1,56 +1,50 @@
 import React, { useState, useCallback } from 'react';
 import InputPanel from './components/InputPanel';
-import AssemblyView from './components/AssemblyView';
-import LogicTable from './components/LogicTable';
-import TransformEngine from './components/TransformEngine';
-import ModularType from './components/ModularType';
-import AppPreview from './components/AppPreview';
+import ModuleLibrary from './components/ModuleLibrary';
+import AssetsView from './components/AssetsView';
+import ApplicationsView from './components/ApplicationsView';
 import ExportButton from './components/ExportButton';
-import { extractModules } from './components/ModuleExtractor';
+import { generateModuleSet } from './utils/shapeModules';
 import { loadImage } from './utils/canvasHelpers';
 
 const TABS = [
-  { id: 'assembly', label: 'Assembly' },
-  { id: 'logic', label: 'Logic Table' },
-  { id: 'transform', label: 'Transforms' },
-  { id: 'type', label: 'Typography' },
-  { id: 'preview', label: 'Preview' },
+  { id: 'modules', label: 'Components' },
+  { id: 'assets', label: 'Assets' },
+  { id: 'applications', label: 'Applications' },
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('assembly');
+  const [activeTab, setActiveTab] = useState('modules');
+
+  // Step 1: Logo
   const [logoSrc, setLogoSrc] = useState(null);
   const [logoImg, setLogoImg] = useState(null);
 
-  // Colors
-  const [primaryColor, setPrimaryColor] = useState('#4f8cff');
-  const [secondaryColor, setSecondaryColor] = useState('#ff6b4f');
+  // Step 2: Colors
+  const [primaryColor, setPrimaryColor] = useState('#00a651');
+  const [secondaryColor, setSecondaryColor] = useState('#ff6347');
   const [bgColor, setBgColor] = useState('#0e0e0e');
 
-  // Extraction params
-  const [gridSize, setGridSize] = useState(8);
-  const [moduleScale, setModuleScale] = useState(1);
+  // Step 3: FVS Parameters
+  const [edgeStyle, setEdgeStyle] = useState('rounded');
+  const [cornerRadius, setCornerRadius] = useState(0.25);
+  const [gridDensity, setGridDensity] = useState(4);
+  const [moduleGap, setModuleGap] = useState(4);
 
-  // Extracted data
-  const [moduleData, setModuleData] = useState(null);
+  // Generated system
+  const [modules, setModules] = useState(null);
 
   const handleImageUpload = useCallback(async (file) => {
     const url = URL.createObjectURL(file);
     setLogoSrc(url);
     const img = await loadImage(url);
     setLogoImg(img);
-    setModuleData(null);
   }, []);
 
-  const handleExtract = useCallback(() => {
-    if (!logoImg) return;
-    const data = extractModules(logoImg, gridSize);
-    setModuleData(data);
-  }, [logoImg, gridSize]);
-
-  const modules = moduleData?.modules || null;
-  const rows = moduleData?.rows || 0;
-  const cols = moduleData?.cols || 0;
+  const handleGenerate = useCallback(() => {
+    const moduleSet = generateModuleSet(edgeStyle);
+    setModules(moduleSet);
+  }, [edgeStyle]);
 
   return (
     <div className="app">
@@ -59,12 +53,12 @@ export default function App() {
         <div className="export-bar">
           <ExportButton
             modules={modules}
-            rows={rows}
-            cols={cols}
+            cornerRadius={cornerRadius}
+            gridDensity={gridDensity}
+            moduleGap={moduleGap}
             primaryColor={primaryColor}
             secondaryColor={secondaryColor}
             bgColor={bgColor}
-            moduleScale={moduleScale}
           />
         </div>
       </header>
@@ -78,12 +72,16 @@ export default function App() {
         setSecondaryColor={setSecondaryColor}
         bgColor={bgColor}
         setBgColor={setBgColor}
-        gridSize={gridSize}
-        setGridSize={setGridSize}
-        moduleScale={moduleScale}
-        setModuleScale={setModuleScale}
-        onExtract={handleExtract}
-        hasModules={!!modules}
+        edgeStyle={edgeStyle}
+        setEdgeStyle={setEdgeStyle}
+        cornerRadius={cornerRadius}
+        setCornerRadius={setCornerRadius}
+        gridDensity={gridDensity}
+        setGridDensity={setGridDensity}
+        moduleGap={moduleGap}
+        setModuleGap={setModuleGap}
+        onGenerate={handleGenerate}
+        hasSystem={!!modules}
       />
 
       <div className="main-area">
@@ -99,53 +97,36 @@ export default function App() {
           ))}
         </div>
         <div className="tab-content">
-          {activeTab === 'assembly' && (
-            <AssemblyView
+          {activeTab === 'modules' && (
+            <ModuleLibrary
               modules={modules}
-              rows={rows}
-              cols={cols}
-              primaryColor={primaryColor}
-              bgColor={bgColor}
-              moduleScale={moduleScale}
-            />
-          )}
-          {activeTab === 'logic' && (
-            <LogicTable
-              modules={modules}
+              cornerRadius={cornerRadius}
               primaryColor={primaryColor}
               secondaryColor={secondaryColor}
               bgColor={bgColor}
             />
           )}
-          {activeTab === 'transform' && (
-            <TransformEngine
+          {activeTab === 'assets' && (
+            <AssetsView
               modules={modules}
-              rows={rows}
-              cols={cols}
+              cornerRadius={cornerRadius}
+              gridDensity={gridDensity}
+              moduleGap={moduleGap}
               primaryColor={primaryColor}
               secondaryColor={secondaryColor}
               bgColor={bgColor}
-              moduleScale={moduleScale}
             />
           )}
-          {activeTab === 'type' && (
-            <ModularType
+          {activeTab === 'applications' && (
+            <ApplicationsView
               modules={modules}
+              cornerRadius={cornerRadius}
+              gridDensity={gridDensity}
+              moduleGap={moduleGap}
               primaryColor={primaryColor}
               secondaryColor={secondaryColor}
               bgColor={bgColor}
-              moduleScale={moduleScale}
-            />
-          )}
-          {activeTab === 'preview' && (
-            <AppPreview
-              modules={modules}
-              rows={rows}
-              cols={cols}
-              primaryColor={primaryColor}
-              secondaryColor={secondaryColor}
-              bgColor={bgColor}
-              moduleScale={moduleScale}
+              logoImg={logoImg}
             />
           )}
         </div>

@@ -417,6 +417,133 @@ input, select {
   border-radius: 3px;
 }
 
+/* Step badges */
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* Edge style picker */
+.edge-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.edge-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.edge-option:hover {
+  border-color: var(--accent);
+}
+
+.edge-option.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  background: rgba(79, 140, 255, 0.1);
+}
+
+.edge-option span {
+  font-size: 8px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.edge-option canvas {
+  display: block;
+}
+
+/* Module grid (large — for library view) */
+.module-grid-large {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+/* Supershape grid */
+.supershape-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+/* Color variation grid */
+.color-var-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.color-var-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+}
+
+.color-var-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  min-width: 80px;
+}
+
+.color-var-cell canvas {
+  display: block;
+  border-radius: 4px;
+}
+
+/* Asset cards */
+.asset-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.asset-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  text-align: center;
+}
+
+.asset-card canvas {
+  display: block;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.asset-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+}
+
 /* Empty state */
 .empty-state {
   display: flex;

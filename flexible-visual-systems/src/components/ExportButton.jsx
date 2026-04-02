@@ -1,121 +1,123 @@
 import React, { useCallback } from 'react';
-import { createCanvas, clearCanvas, drawGrid, downloadCanvas } from '../utils/canvasHelpers';
-import { renderModules, getUniqueModuleTypes } from './ModuleExtractor';
+import { createCanvas, clearCanvas, downloadCanvas } from '../utils/canvasHelpers';
+import { drawShape, drawPattern, drawFrame } from '../utils/shapeModules';
 import { renderBitmapText } from '../utils/bitmapFont';
 
-export default function ExportButton({ modules, rows, cols, primaryColor, secondaryColor, bgColor, moduleScale }) {
+export default function ExportButton({ modules, cornerRadius, gridDensity, moduleGap, primaryColor, secondaryColor, bgColor }) {
   const handleExport = useCallback(() => {
     if (!modules) return;
 
-    const width = 1200;
-    const height = 1600;
-    const canvas = createCanvas(width, height);
+    const W = 1200, H = 1800;
+    const canvas = createCanvas(W, H);
     const ctx = canvas.getContext('2d');
-    clearCanvas(ctx, bgColor);
+    clearCanvas(ctx, '#ffffff');
 
-    const uniqueTypes = getUniqueModuleTypes(modules);
-    let y = 40;
+    let y = 50;
 
-    // Title
+    // --- Header ---
     ctx.fillStyle = primaryColor;
+    ctx.fillRect(0, 0, W, 100);
+    ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 28px monospace';
-    ctx.fillText('FLEXIBLE VISUAL SYSTEM', 40, y);
-    y += 20;
-
-    ctx.fillStyle = '#888';
+    ctx.fillText('FLEXIBLE VISUAL SYSTEM', 50, 60);
     ctx.font = '14px monospace';
-    ctx.fillText('System Sheet — Generated Export', 40, y);
-    y += 40;
+    ctx.fillText('System Sheet', 50, 82);
+    y = 140;
 
-    // Divider
-    ctx.fillStyle = primaryColor;
-    ctx.fillRect(40, y, width - 80, 2);
-    y += 30;
-
-    // Section: Color Palette
+    // --- Color Palette ---
     ctx.fillStyle = '#888';
     ctx.font = '11px monospace';
-    ctx.fillText('COLOR PALETTE', 40, y);
-    y += 20;
+    ctx.fillText('COLOR PALETTE', 50, y);
+    y += 24;
 
     const colors = [
       { label: 'Primary', color: primaryColor },
       { label: 'Secondary', color: secondaryColor },
       { label: 'Background', color: bgColor },
     ];
-
     colors.forEach((c, i) => {
-      const x = 40 + i * 160;
+      const x = 50 + i * 180;
       ctx.fillStyle = c.color;
-      ctx.fillRect(x, y, 60, 60);
-      ctx.strokeStyle = '#333';
-      ctx.strokeRect(x, y, 60, 60);
-      ctx.fillStyle = '#888';
+      ctx.fillRect(x, y, 70, 70);
+      ctx.strokeStyle = '#ddd';
+      ctx.strokeRect(x, y, 70, 70);
+      ctx.fillStyle = '#555';
       ctx.font = '10px monospace';
-      ctx.fillText(c.label, x, y + 76);
-      ctx.fillText(c.color, x, y + 90);
+      ctx.fillText(c.label, x, y + 86);
+      ctx.fillText(c.color, x, y + 100);
+    });
+    y += 120;
+
+    // --- Module Library ---
+    ctx.fillStyle = '#888';
+    ctx.font = '11px monospace';
+    ctx.fillText('MODULE LIBRARY', 50, y);
+    y += 24;
+
+    modules.slice(0, 8).forEach((mod, i) => {
+      const x = 50 + (i % 8) * 130;
+      drawShape(ctx, x, y, 80, 80, mod.corners, cornerRadius, primaryColor, null);
+      ctx.fillStyle = '#888';
+      ctx.font = '9px monospace';
+      ctx.fillText(mod.label, x, y + 96);
+    });
+    y += 116;
+
+    // --- Frames ---
+    ctx.fillStyle = '#888';
+    ctx.font = '11px monospace';
+    ctx.fillText('FRAMES', 50, y);
+    y += 24;
+
+    modules.slice(0, 6).forEach((mod, i) => {
+      const x = 50 + i * 180;
+      drawFrame(ctx, x, y, 140, 80, mod.corners, cornerRadius, primaryColor, 2);
     });
     y += 110;
 
-    // Section: Module Library
+    // --- Pattern ---
     ctx.fillStyle = '#888';
     ctx.font = '11px monospace';
-    ctx.fillText('MODULE LIBRARY', 40, y);
-    y += 20;
+    ctx.fillText('PATTERN', 50, y);
+    y += 24;
 
-    uniqueTypes.forEach((mod, i) => {
-      const x = 40 + i * 100;
-      mod.drawer(ctx, x + 10, y, 60, primaryColor);
-      ctx.fillStyle = '#888';
-      ctx.font = '10px monospace';
-      ctx.fillText(mod.type, x + 10, y + 76);
-    });
+    const cell = 50;
+    drawPattern(ctx, 50, y, 8, 4, cell, moduleGap, modules.slice(0, 3), cornerRadius, primaryColor, null);
+    y += 4 * (cell + moduleGap) + 20;
+
+    // --- Typography ---
+    ctx.fillStyle = '#888';
+    ctx.font = '11px monospace';
+    ctx.fillText('MODULAR TYPOGRAPHY', 50, y);
+    y += 24;
+
+    const drawMod = (c2, x2, y2, s) => {
+      drawShape(c2, x2, y2, s * 0.9, s * 0.9, modules[0].corners, cornerRadius, primaryColor, null);
+    };
+    renderBitmapText(ctx, 'ABCDEFGHIJ', drawMod, 10, 50, y, 1);
+    y += 90;
+    renderBitmapText(ctx, 'KLMNOPQRST', drawMod, 10, 50, y, 1);
+    y += 90;
+    renderBitmapText(ctx, 'UVWXYZ 0123', drawMod, 10, 50, y, 1);
     y += 100;
 
-    // Section: Assembly
-    ctx.fillStyle = '#888';
-    ctx.font = '11px monospace';
-    ctx.fillText('ASSEMBLY', 40, y);
-    y += 20;
-
-    const cellSize = Math.floor(28 * moduleScale);
-    drawGrid(ctx, cellSize);
-    renderModules(ctx, modules, cellSize, 40, y, primaryColor);
-    y += rows * cellSize + 30;
-
-    // Section: Typography Sample
-    ctx.fillStyle = '#888';
-    ctx.font = '11px monospace';
-    ctx.fillText('MODULAR TYPOGRAPHY', 40, y);
-    y += 20;
-
-    if (uniqueTypes[0]) {
-      const drawMod = (ctx2, x2, y2, size) => {
-        uniqueTypes[0].drawer(ctx2, x2, y2, size * 0.9, primaryColor);
-      };
-      renderBitmapText(ctx, 'ABCDEFG', drawMod, 8, 40, y, 1);
-      y += 80;
-      renderBitmapText(ctx, 'HIJKLMN', drawMod, 8, 40, y, 1);
-      y += 80;
-    }
-
-    // Footer
+    // --- Footer ---
     ctx.fillStyle = primaryColor;
-    ctx.fillRect(40, height - 60, width - 80, 1);
-    ctx.fillStyle = '#666';
+    ctx.fillRect(50, H - 60, W - 100, 1);
+    ctx.fillStyle = '#999';
     ctx.font = '10px monospace';
-    ctx.fillText('Generated by Flexible Visual Systems', 40, height - 40);
-    ctx.fillText(new Date().toISOString().split('T')[0], width - 140, height - 40);
+    ctx.fillText('Generated by Flexible Visual Systems', 50, H - 38);
+    ctx.fillText(new Date().toISOString().split('T')[0], W - 160, H - 38);
 
     downloadCanvas(canvas, 'fvs-system-sheet.png');
-  }, [modules, rows, cols, primaryColor, secondaryColor, bgColor, moduleScale]);
+  }, [modules, cornerRadius, gridDensity, moduleGap, primaryColor, secondaryColor, bgColor]);
 
   return (
     <button
       className="btn btn-primary"
       onClick={handleExport}
       disabled={!modules}
-      title={modules ? 'Export system sheet as PNG' : 'Extract modules first'}
+      title={modules ? 'Export system sheet as PNG' : 'Generate system first'}
     >
       Export System Sheet
     </button>
