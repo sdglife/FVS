@@ -1,8 +1,11 @@
 # Taste Basket — Product Requirements Document
 
-**Status:** Draft v1 — for review
+**Status:** Draft v2 — for review
 **Owner:** TBD
 **Last updated:** 2026-10-02
+**Changelog:** v2 adds the multi-platform sourcing feasibility check (Are.na,
+Savee, Same.Energy, Cosmos.so) and switches deck-scoping from
+category-only to a **3-keyword selection** model.
 
 ## 1. Problem
 
@@ -17,13 +20,17 @@ act on immediately.
 
 - Let a creator/agency send a client a single link to a mobile-friendly swipe
   experience, no app install or account setup on the creator's side required.
-- Let the client self-register (name + email or phone), pick a brand name and
-  category, choose a session length, and swipe through a curated image deck
-  (right = like, left = pass).
+- Let the client self-register (name + email or phone), name their brand,
+  pick **3 keywords** that describe the vibe they're after (from a curated
+  list of 50, or their own), choose a session length, and swipe through a
+  keyword-matched image deck (right = like, left = pass).
 - Automatically produce two deliverables for the creator per client session:
   1. The gallery of "liked" images.
   2. A written style summary (palette, mood, lighting, composition, type
      feel, etc.) synthesized from everything the client liked.
+- Source the image library itself in a way that's actually legal to operate
+  — see §5, since this product pulls visual reference material from
+  third-party moodboard sites and that's where most of the real risk lives.
 - Work well one-handed on a phone — this is the primary device.
 
 ### Non-goals (v1)
@@ -32,26 +39,29 @@ act on immediately.
 - No payment, billing, or multi-seat team accounts for the creator org.
 - No native mobile app — mobile web only.
 - No real-time collaboration (multiple people swiping the same session together).
+- No redistribution of third-party images as a *commercial deliverable* —
+  everything sourced from Are.na/Savee/Same.Energy stays a private,
+  internal reference moodboard for the creator and their client, never
+  resold, never published, never used as final licensed creative assets
+  (see §5 for why this distinction matters and what it does/doesn't fix).
 
 ## 3. Users
 
 | Persona | Needs |
 |---|---|
-| **Creator / Admin** (agency, freelance designer) | Create a swipe session for a client/project, pick or scope the image pool (by category), share one link, review results, export/share the summary. |
+| **Creator / Admin** (agency, freelance designer) | Create a swipe session for a client/project, share one link, review results, export/share the summary. |
 | **Client / Swiper** | No login friction, works on their phone, quick (2–5 min), feels like a fun quiz not homework. |
 
 ## 4. Core Flows
 
 ### 4.1 Admin: create a session
 1. Admin logs in (simple email/password or magic link).
-2. Clicks "New Session" → enters project/client name (optional, for their own
-   organization) and picks the **image category pool(s)** to swipe from
-   (e.g. Branding/Logo, Interior, Fashion, Food & Beverage, Web/UI, Packaging,
-   Photography/Editorial — see §6).
+2. Clicks "New Session" → enters project/client name (optional, for their
+   own organization). No category/keyword setup needed here — the client
+   picks their own keywords when they open the link (§4.2); this keeps the
+   admin side to one click.
 3. Admin gets a shareable link (and QR code, since this is handed off in
-   person often) — no further setup needed. The *client* supplies brand name,
-   category, and deck size when they open the link (§4.2), not the admin —
-   this keeps the admin side to one click.
+   person often).
 4. Admin can see session status (not started / in progress / completed) and,
    once completed, open the results (§4.3).
 
@@ -59,100 +69,160 @@ act on immediately.
 1. Client opens the link on their phone.
 2. Registration screen: **Name**, and **Email or Phone** (at least one of
    the two). No password.
-3. Client enters **Brand name** and picks a **Brand category** from a fixed
-   list (used both to scope which images they see and to flavor the final
-   summary).
-4. Client picks **deck size**: 10 / 25 / 40 / 50 / 75 cards.
-5. Swipe UI: one image card at a time, full-bleed on mobile.
+3. Client enters **Brand name**.
+4. **Keyword picker**: client is shown a grid/list of **50 curated vibe
+   keywords** (see §6.1 for the starter list) and must choose **exactly 3**.
+   They may instead (or additionally, up to the 3-keyword cap) type their
+   own free-text keyword if none of the 50 fit — see §6.2 for how custom
+   keywords get matched to images.
+5. Client picks **deck size**: 10 / 25 / 40 / 50 / 75 cards.
+6. System assembles a deck: images from the reference index whose tags best
+   match the chosen 3 keywords (§6.2 covers the matching/ranking logic),
+   sized to the chosen deck size.
+7. Swipe UI: one image card at a time, full-bleed on mobile.
    - Swipe right (or tap ✓) = like, swipe left (or tap ✕) = pass.
    - Progress indicator (e.g. "14 / 40").
    - Undo last swipe (single-level) in case of a mis-swipe.
-6. On completing the deck, client sees a short "Thanks — here's what you
+8. On completing the deck, client sees a short "Thanks — here's what you
    liked" recap screen (their liked images only), then they're done. They do
    **not** see the AI-written summary — that goes to the admin.
 
 ### 4.3 Admin: results
 1. Admin opens a completed session and sees:
-   - Client's intake info (name, contact, brand name, category, deck size,
-     completion time).
+   - Client's intake info (name, contact, brand name, chosen keywords, deck
+     size, completion time).
    - **Liked image gallery** (grid), each image tagged with its source
-     prompt/metadata.
+     platform, source link/credit, and matched keywords.
    - **AI-generated style summary**: a short written brief covering common
      threads across the liked set — palette/color temperature, lighting,
      mood/adjectives, composition/layout tendencies, texture/material,
-     typography feel (if applicable to the category) — plus 3–5 representative
-     "anchor" images.
+     typography feel — plus 3–5 representative "anchor" images.
 2. Admin can export/share the results (shareable read-only link and/or
    PDF export) to hand to their design team or back to the client as a
-   confirmation of direction.
+   confirmation of direction. Because some images in the set may be
+   third-party reference material (see §5), this export is explicitly
+   labeled "internal reference moodboard" with source credits intact — not
+   presented as cleared, licensed creative.
 
-## 5. Image Sourcing — **Cosmos.so feasibility check**
+## 5. Image Sourcing — multi-platform feasibility check
 
-**Finding: do not source images from cosmos.so. It is not usable for this
-product, for two independent reasons:**
+You asked to pull reference images from **Are.na, Savee, Same.Energy, and
+Cosmos.so**. I checked all four for an API and for what their terms actually
+allow. Headline: **none of them can be bulk-scraped for this**, even for a
+non-commercial, reference-only use — but one of them (Are.na) has a real,
+sanctioned API we can build on, and the other three need a different
+approach. "No commercial gain" and "reference only" reduce legal severity
+but don't waive a platform's Terms of Service or the copyright of the
+individual photographers/designers whose work is on these sites — scraping
+prohibitions and "you may not copy or store this" clauses apply regardless
+of what we intend to do with the images afterward.
 
-1. **No API, and scraping is explicitly prohibited.** Cosmos.so publishes no
-   public API, issues no API keys, and disables GraphQL introspection on its
-   backend. Its Terms & Conditions explicitly prohibit "using automated means
-   to access, monitor, scrape, harvest, or collect data from the Website
-   without prior written consent," naming robots, spiders, crawlers, and
-   data-mining tools specifically. Unofficial community tools exist (e.g. an
-   unofficial MCP server, an unofficial "Odyssey" API) but every one of them
-   states it's hitting the private app endpoint and that the operator is
-   responsible for ToS compliance — i.e., they're a liability, not a sanctioned
-   integration path.
-2. **Unclear image rights even if access were allowed.** Cosmos is a curation
-   platform — it aggregates images other people posted/scraped from across
-   the web, and its own Terms reserve copyright in "the Content" without
-   warranting the underlying images are cleared for reuse. Its separate
-   "Public Work" sub-product claims to surface images *believed* to be public
-   domain but explicitly disclaims any warranty and puts the compliance burden
-   on the user. For a commercial client-onboarding tool — where the output
-   (a curated image set + style brief) gets handed to a paying client — we'd
-   be redistributing other photographers'/artists' work with no license
-   trail. That's a real legal exposure for the creator using this tool, not
-   just a ToS technicality.
+| Platform | API? | What their terms actually allow | Verdict |
+|---|---|---|---|
+| **Are.na** | **Yes** — public, documented REST API (`api.are.na`, v3, OpenAPI spec), personal access tokens, explicitly built for third-party tools. | Are.na is itself a curation tool (like a smarter Pinterest for research/moodboards) and its API is the sanctioned way to read public channels/blocks. Individual images are still other people's work gathered from around the web, so the safe pattern is: **hotlink + attribute + link back to the source block/user**, never silently re-host as if it were ours. | **Usable now**, as the backbone automated source. |
+| **Savee** | Has an official REST API *and* an MCP server. | Section 5 of Savee's ToS says explicitly: being able to see/search/fetch something via the app, API, or an AI assistant **gives you no right to copy, store, publish, or otherwise use it** — because Savee doesn't own the images either; they're saved from around the web by members. | **Do not ingest/store.** The API exists for querying *your own* Savee account's saves, not for building a third-party content index. Only viable path: manual, human-reviewed curation (§5.1), not automated. |
+| **Same.Energy** | **No public API.** Their own About page says selling API access is only "being considered." | No stated terms for bulk access because there's no access to grant. Scraping an unauthenticated, no-API visual search engine is squarely the kind of unauthorized automated collection most ToS (and site-protection measures) exist to stop. | **Not usable via automation.** Manual curation only, or wait/ask them directly about future API access. |
+| **Cosmos.so** | **No public API**, GraphQL introspection disabled. | ToS explicitly bans "using automated means to access, monitor, scrape, harvest, or collect data... including robots, spiders, crawlers, scrapers, or data-mining tools." Unofficial community wrappers exist but each one says the operator owns the ToS risk. | **Not usable**, same finding as the v1 PRD. |
 
-**Recommended alternatives (any of these, can mix):**
+### 5.1 What we'll actually do
 
-| Option | License story | Notes |
-|---|---|---|
-| **AI-generated images** (what the original "Taste Basket" demo used) | We own/control generation, no third-party rights issue | Matches the original concept exactly: generate the deck from prompts per category, store the generating prompt alongside each image so "why did they like this" analysis is trivial. Can regenerate/expand a category pool on demand. |
-| **Licensed stock APIs** — Unsplash API, Pexels API, Adobe Stock | Clear, well-documented commercial-use licenses | Unsplash/Pexels are free for this use case with attribution per their API terms; Adobe Stock requires a license per image but is fully commercial-safe and is directly reachable from this environment's Adobe MCP tools (`asset_search` / `asset_license_and_download_stock`) if we want higher-end curated photography. |
-| **Curated in-house library** | Full control | Creator/agency uploads their own portfolio or licensed reference shots per category over time; this becomes the compounding asset of the tool. |
+**Automated, scalable sources (do this for real volume):**
+1. **Are.na API** — search/pull from public channels tagged with our 50
+   keywords (and near-synonyms), store only metadata + a hotlinked image
+   URL + the source block/user link; render with a visible "via Are.na ·
+   [original]" credit on every card sourced this way.
+2. **Licensed stock APIs** (Unsplash, Pexels, Adobe Stock via this
+   environment's Adobe MCP tools) tagged into the same keyword taxonomy —
+   zero rights ambiguity, good for filling keyword gaps Are.na doesn't cover well.
+3. **AI-generated images** — same as the v1 plan, generated per keyword
+   combination; we fully own these and can mint more on demand for whatever
+   keyword pairs are thin on real images.
 
-**v1 recommendation:** hybrid of AI-generated (primary, for breadth and for
-the "common prompt → common thread" analysis trick) + an initial
-hand-curated/stock seed set per category for photographic realism where pure
-generation looks off (e.g. food, interiors). Keep a `source` + `license` +
-`prompt_or_credit` field on every image row from day one so sourcing can
-evolve without a data-model change.
+**Manual-only, low-volume sources (Savee, Same.Energy, Cosmos.so):**
+A human curator browses these sites the normal way (as any visitor would),
+hand-picks individual images worth referencing, and manually tags +
+imports them one at a time into our index with source credit preserved.
+This keeps a human editorial decision in the loop instead of automated bulk
+collection, which is the actual distinction their terms care about — but it
+is slow by design and won't scale to "50 keywords × many images each."
+Treat this as an optional slow-trickle supplement, not a launch dependency.
+If real volume from these three specifically matters, the clean way to get
+it is to ask each platform directly for a data-partnership/API arrangement
+— Same.Energy's own site already invites exactly that conversation.
+
+**What we will not do:** write an automated scraper against Savee,
+Same.Energy, or Cosmos.so. That's true regardless of commercial intent, and
+it's also just a fragile foundation — any of the three can rate-limit, IP-ban,
+or structurally change overnight with no recourse since we'd have no
+sanctioned access to fall back on.
 
 ## 6. Content Model
 
-**Brand categories** (fixed list, extensible): Branding/Logo, Web & Digital
-Product, Packaging, Interior/Spatial, Fashion/Apparel, Food & Beverage,
-Photography/Editorial, Event/Experiential. Each category maps to its own
-image pool.
+### 6.1 The 50 keywords (starter list, editable)
+
+Grouped for reference; the client just sees a flat searchable grid of 50 and
+picks 3.
+
+- **Mood:** Minimal, Maximal, Moody, Playful, Elegant, Raw, Whimsical,
+  Nostalgic, Futuristic, Serene, Bold, Romantic
+- **Palette:** Monochrome, Pastel, Vibrant, Muted, Earthy, Jewel-tone,
+  Black & White, Neon
+- **Texture/Material:** Organic, Industrial, Handmade, Glossy, Matte, Grainy,
+  Textured, Natural
+- **Era/Style:** Vintage, Retro-futurist, Brutalist, Art Deco, Y2K,
+  Scandinavian, Mid-century, Contemporary
+- **Composition:** Geometric, Asymmetric, Layered, Clean/Grid-based,
+  Collage, Negative-space-heavy
+- **Lighting:** High-contrast, Soft/diffused, Golden-hour, Studio-lit,
+  Shadow-play
+- **Tone:** Luxury, Approachable, Experimental, Editorial, Corporate/Polished,
+  Street/Underground, Sustainable/Natural, Tech-forward
+
+(50 slots total — final list is easy to tune after the first few client
+sessions show which keywords actually get picked vs. ignored.)
+
+### 6.2 Keyword → image matching
+
+- Every image in the index carries a `keywords[]` field: 2–6 tags drawn from
+  the canonical 50, assigned at ingestion time (by the AI tagging pass for
+  generated/stock images, by the human curator for manually-imported ones,
+  and by keyword-matched channel/search terms for Are.na pulls).
+- When a client picks 3 keywords, the deck is assembled by scoring each
+  candidate image on keyword overlap (3/3 matches ranked highest, then 2/3,
+  then 1/3) and sampling across sources so one platform doesn't dominate the
+  deck. If a keyword combination is thin, the AI-generation source (§5.1)
+  tops up the pool on demand.
+- **Custom keywords**: if a client types their own term instead of picking
+  from the 50, we embed it and map it to the nearest canonical keyword(s)
+  for retrieval purposes, *and* store the literal custom term against the
+  session so the admin sees what the client actually typed (useful signal
+  even if matching fell back to a close canonical tag).
+
+### 6.3 Records
 
 **Image record:**
 ```
-id, category, image_url, thumbnail_url,
-source ("ai_generated" | "stock_licensed" | "in_house"),
-generation_prompt (nullable),
-tags: { palette: [...], lighting, mood: [...], composition, texture, era/style },
+id, keywords: [...3-6 of the 50 canonical tags...], custom_tags: [...],
+image_url, thumbnail_url,
+source_platform ("arena" | "stock_unsplash" | "stock_pexels" |
+                  "stock_adobe" | "ai_generated" | "manual_savee" |
+                  "manual_same_energy" | "in_house"),
+source_url (link back to original, required for arena/manual_*),
+usage_mode ("hotlinked" | "stored_copy"),
+generation_prompt (nullable, for ai_generated),
 license_credit (nullable),
 active (bool)
 ```
 
 **Session record:**
 ```
-id, admin_id, share_token, categories_in_scope[], created_at, status
+id, admin_id, share_token, created_at, status
 ```
 
 **Respondent record (one per client who opens the link):**
 ```
-id, session_id, name, email, phone, brand_name, brand_category,
+id, session_id, name, email, phone, brand_name,
+chosen_keywords: [k1, k2, k3], custom_keyword_text (nullable),
 deck_size, swipes: [{image_id, direction, ts}],
 completed_at
 ```
@@ -168,11 +238,11 @@ generated_at
 For each completed session:
 1. Pull the tag metadata (and generation prompts, if AI-sourced) for every
    liked image.
-2. Feed that structured data + the brand name/category into an LLM prompt
-   that asks specifically for: dominant palette, lighting tendency, mood
-   adjectives, composition/layout patterns, texture/material cues, and (for
-   branding/web categories) typography feel — written as a short, usable
-   creative brief, not a generic paragraph.
+2. Feed that structured data + the brand name + the 3 chosen keywords into
+   an LLM prompt that asks specifically for: dominant palette, lighting
+   tendency, mood adjectives, composition/layout patterns, texture/material
+   cues, and typography feel — written as a short, usable creative brief,
+   not a generic paragraph.
 3. Store the result verbatim against the respondent so it doesn't change on
    re-view; add a "regenerate" action for the admin if they want a reroll.
 
@@ -194,6 +264,9 @@ consistent.
 - **Accessible swipe alternative**: large tap targets (✓ / ✕ buttons) as a
   fallback to the gesture swipe, for accessibility and for admins
   demoing on desktop.
+- **Attribution rendering**: any card sourced from Are.na or manually from
+  Savee/Same.Energy must show a small source credit/link, both during
+  swiping and in the admin's final gallery export.
 
 ## 9. Suggested tech stack
 
@@ -203,10 +276,13 @@ v1 can reuse that pattern for consistency:
 - Frontend: React + Vite, Framer Motion (or `react-tinder-card`) for the
   swipe gesture, mobile-first CSS.
 - Backend: lightweight API (Node/Express or a BaaS like Supabase) + Postgres
-  for sessions/respondents/images; object storage (S3/Cloudinary) for image
-  assets.
-- AI: one call per image set at ingestion (if generating tags) and one call
-  per completed respondent (summary generation).
+  for sessions/respondents/images; object storage (S3/Cloudinary) only for
+  images we're entitled to store a copy of (AI-generated, licensed stock,
+  manually-curated-with-credit) — Are.na-sourced images stay hotlinked, not
+  copied, per §5.
+- AI: one call per image set at ingestion (tagging) and one call per
+  completed respondent (summary generation); embeddings for custom-keyword
+  matching (§6.2).
 - Hosting: single-click deploy (Vercel/Netlify) to match the "shareable web
   app" requirement from the brief.
 
@@ -215,33 +291,42 @@ different stack (e.g. Next.js full-stack instead of separate FE/BE).
 
 ## 10. Open questions for you
 
-1. **Image sourcing**: go with AI-generated as primary (per §5), or do you
-   already have a stock/licensing account (Unsplash+/Adobe Stock/etc.) you'd
-   rather wire up first?
-2. **Admin auth**: is this single-creator (just you) for now, or
-   multi-tenant (multiple agencies/users each with their own sessions) from
+1. **Keyword list**: does the §6.1 starter list of 50 look right, or do you
+   want to swap categories in/out before we lock it (it's the main taxonomy
+   everything else hangs off)?
+2. **Savee/Same.Energy/Cosmos volume**: are you okay with these three being
+   a slow, manually-curated trickle (per §5.1) rather than a bulk source, at
+   least for v1? If you need real volume from them, the honest next step is
+   reaching out to those platforms directly, not scraping.
+3. **Attribution UI**: comfortable with visible "via Are.na / source" credit
+   chips on swipe cards, or would that clutter the swipe experience too much?
+4. **Admin auth**: single-creator (just you) for now, or multi-tenant from
    day one?
-3. **Branding of the tool itself**: white-label per agency (their logo on the
-   swipe screen) or your own "Taste Basket" branding for all clients?
-4. **Session reuse**: should one admin session link support multiple
-   respondents (e.g. 3 stakeholders at the same client swiping separately),
-   or is it strictly one link = one respondent?
-5. **Stack preference**: comfortable with the React/Vite + Supabase/Postgres
+5. **Session reuse**: one link = one respondent, or should a link support
+   multiple respondents (e.g. several stakeholders at the same client)?
+6. **Stack preference**: comfortable with the React/Vite + Supabase/Postgres
    recommendation in §9, or do you want Next.js / something else?
 
 ## 11. Phased plan
 
-- **Phase 1 (MVP)**: registration → swipe → liked gallery + AI summary,
-  single admin, AI-generated + seed stock images, 2–3 categories to start.
-- **Phase 2**: more categories, admin dashboard polish, PDF/share export of
-  the summary, resumable sessions, QR code sharing.
+- **Phase 1 (MVP)**: registration → keyword picker → swipe → liked gallery +
+  AI summary. Image pool from Are.na API + licensed stock + AI-generated
+  only (fully automatable sources). 50-keyword list locked. Single admin.
+- **Phase 2**: manual-curation pipeline/tooling for Savee/Same.Energy/Cosmos
+  trickle-feed, admin dashboard polish, PDF/share export, resumable
+  sessions, QR code sharing.
 - **Phase 3**: multi-tenant admin accounts, white-labeling, richer tag
-  taxonomy, in-house image library uploads per agency.
+  taxonomy, in-house image library uploads per agency, direct API/data
+  partnership outreach to Same.Energy/Savee if volume from them becomes
+  important.
 
 ## 12. Success metrics
 
 - % of shared links that reach a completed swipe session.
 - Median time-to-complete per deck size.
+- Keyword coverage: % of the 50 keywords (and combos) with a healthy image
+  pool vs. ones that fall back to AI-generation every time (signals where
+  to grow the curated/stock pool).
 - Creator-reported usefulness of the generated summary (quick survey/thumbs
   up-down after first few uses).
 - Reduction in brief-revision rounds for projects that used the tool vs.
