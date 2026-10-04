@@ -24,7 +24,11 @@ cp .env.example .env.local   # fill in the values below
    delivery to configure just to sign in.
 3. **Summary generation**: set `ANTHROPIC_API_KEY`.
 4. **Image sources** (PRD §5/§5.1) — set what you have, run the rest later:
-   - `ARENA_ACCESS_TOKEN` — Are.na, the one platform with a real public API.
+   - `ARENA_ACCESS_TOKEN` — Are.na. Queried **live, per respondent**, not
+     batch-ingested (their Acceptable Use terms prohibit bulk/systematic
+     collection even through the official API — see `src/lib/sources/arena.ts`).
+     Setting this just lets deck assembly top itself up on demand; there's
+     no ingest command for it.
    - `UNSPLASH_ACCESS_KEY` / `PEXELS_API_KEY` — licensed stock.
    - `AI_IMAGE_PROVIDER=openai` + `AI_IMAGE_API_KEY` — AI-generated fill-in.
 
@@ -41,13 +45,13 @@ tab (or on your phone) to try the client flow.
 ## Populating real images
 
 ```bash
-npm run ingest -- --source arena --keyword minimal
 npm run ingest -- --source stock_unsplash --all
 npm run ingest -- --source ai_generated --keyword brutalist
 ```
 
-Each connector in `src/lib/sources/` upserts into the `images` table keyed
-on `image_url`, so re-running is safe. **Clear the `placeholder_dev` rows
+`arena` is intentionally not a `--source` option here — see above. Each
+connector that *is* here upserts into the `images` table keyed on
+`image_url`, so re-running is safe. **Clear the `placeholder_dev` rows
 seeded by `npm run seed` before using this with a real client** — they're
 dev-only filler, not real reference images:
 
@@ -71,6 +75,13 @@ Known gaps, called out rather than silently shipped:
   implement it (no client-side identity is persisted across reloads). A
   dropped session currently needs the admin to treat the link as spent and
   issue a new one.
+- **Are.na is untested against the live API.** `src/lib/sources/arena.ts`'s
+  response parsing is pieced together from partial public docs (the exact
+  `/v3/search` field names weren't verifiable — this sandbox's network
+  policy blocks `api.are.na`, and the Are.na docs site too). The `/v3/search`
+  endpoint may also be Premium-tier only; a free token could get rejected.
+  Fix up the parsing against a real response the first time this runs
+  somewhere with network access.
 - **AI-generated image URLs may be ephemeral** (`src/lib/sources/ai-generate.ts`)
   — some providers' generation URLs expire. Fine for a trial run; download
   and re-host via Supabase Storage before relying on these long-term.

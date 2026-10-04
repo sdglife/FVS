@@ -1,6 +1,6 @@
 # NVRFOUND Vibe Basket — Product Requirements Document
 
-**Status:** Draft v4 — decisions locked, ready to build
+**Status:** Draft v5 — decisions locked, in active build
 **Owner:** TBD
 **Last updated:** 2026-10-04
 **Changelog:**
@@ -15,6 +15,15 @@
   for v1, one link = one respondent, Next.js full-stack, and the
   Savee/Same.Energy/Cosmos manual-curation trickle is in scope starting
   Phase 1 rather than deferred. See §9–§11.
+- v5 corrects the Are.na integration after reading their full Acceptable
+  Use terms (provided alongside a real access token): Are.na explicitly
+  prohibits "automated crawling, systematic downloading of content, or any
+  form of structured data harvesting" through its API — which is what
+  v4's batch-ingestion design for Are.na actually was, despite using a
+  sanctioned API with a valid token. Having an API does not exempt bulk
+  collection through it. Are.na is now queried live, per respondent,
+  scoped to that one person's chosen keywords, never pre-harvested into a
+  standing library. See §5/§5.1.
 
 ## 1. Problem
 
@@ -133,7 +142,7 @@ of what we intend to do with the images afterward.
 
 | Platform | API? | What their terms actually allow | Verdict |
 |---|---|---|---|
-| **Are.na** | **Yes** — public, documented REST API (`api.are.na`, v3, OpenAPI spec), personal access tokens, explicitly built for third-party tools. | Are.na is itself a curation tool (like a smarter Pinterest for research/moodboards) and its API is the sanctioned way to read public channels/blocks. Individual images are still other people's work gathered from around the web, so the safe pattern is: **hotlink + attribute + link back to the source block/user**, never silently re-host as if it were ours. | **Usable now**, as the backbone automated source. |
+| **Are.na** | **Yes** — public, documented REST API (`api.are.na`, v3), personal access tokens, explicitly built for third-party tools. **But** its Acceptable Use terms separately state: "This API is intended for building applications that integrate with Are.na, not for scraping or bulk data collection. Automated crawling, systematic downloading of content, or any form of structured data harvesting is prohibited." | Having an API and a valid token does not waive that clause. The compliant pattern is a **live query scoped to one real respondent's session**, not a background job that loops every keyword to pre-build our own library. Images stay **hotlinked + attributed + linked back to the source block/user**, never silently re-hosted. | **Usable, live-only** — no batch ingestion script exists for this source (see §5.1); queried on demand per respondent inside deck assembly. |
 | **Savee** | Has an official REST API *and* an MCP server. | Section 5 of Savee's ToS says explicitly: being able to see/search/fetch something via the app, API, or an AI assistant **gives you no right to copy, store, publish, or otherwise use it** — because Savee doesn't own the images either; they're saved from around the web by members. | **Do not ingest/store.** The API exists for querying *your own* Savee account's saves, not for building a third-party content index. Only viable path: manual, human-reviewed curation (§5.1), not automated. |
 | **Same.Energy** | **No public API.** Their own About page says selling API access is only "being considered." | No stated terms for bulk access because there's no access to grant. Scraping an unauthenticated, no-API visual search engine is squarely the kind of unauthorized automated collection most ToS (and site-protection measures) exist to stop. | **Not usable via automation.** Manual curation only, or wait/ask them directly about future API access. |
 | **Cosmos.so** | **No public API**, GraphQL introspection disabled. | ToS explicitly bans "using automated means to access, monitor, scrape, harvest, or collect data... including robots, spiders, crawlers, scrapers, or data-mining tools." Unofficial community wrappers exist but each one says the operator owns the ToS risk. | **Not usable**, same finding as the v1 PRD. |
@@ -151,15 +160,24 @@ is asking the platform directly for API/data-partnership access (§5.1).
 
 ### 5.1 What we'll actually do
 
-**Automated, scalable sources (do this for real volume):**
-1. **Are.na API** — search/pull from public channels tagged with our 50
-   keywords (and near-synonyms), store only metadata + a hotlinked image
-   URL + the source block/user link; render with a visible "via Are.na ·
-   [original]" credit on every card sourced this way.
-2. **Licensed stock APIs** (Unsplash, Pexels, Adobe Stock via this
-   environment's Adobe MCP tools) tagged into the same keyword taxonomy —
-   zero rights ambiguity, good for filling keyword gaps Are.na doesn't cover well.
-3. **AI-generated images** — same as the v1 plan, generated per keyword
+**Are.na — live per-respondent query, never batch-ingested:**
+When a respondent's deck is short on real matches for their chosen
+keywords, we call Are.na's search endpoint live, scoped to that one
+person's 1-3 keywords, bounded to roughly the shortfall in their deck —
+then store just those results (hotlinked, attributed, linked back to the
+source) so they have a stable row for that respondent's swipes to
+reference. There is no scheduled or on-demand job that loops the full
+50-keyword list against Are.na — that would be the "systematic
+downloading" / "structured data harvesting" their terms rule out. If this
+undershoots real volume, the honest next step is asking Are.na directly
+about bulk access, per their own "contact us" line — not a bigger batch job.
+
+**Automated, scalable, batch-ingestible sources (`npm run ingest`):**
+1. **Licensed stock APIs** (Unsplash, Pexels, Adobe Stock via this
+   environment's Adobe MCP tools) tagged into the keyword taxonomy — zero
+   rights ambiguity, and their terms are the ordinary "cache/store what you
+   fetch within your app" kind, not Are.na's bulk-collection carve-out.
+2. **AI-generated images** — same as the v1 plan, generated per keyword
    combination; we fully own these and can mint more on demand for whatever
    keyword pairs are thin on real images.
 
@@ -223,7 +241,9 @@ after the first few client sessions show what gets picked vs. ignored.)
 - Every image in the index carries a `keywords[]` field: 2–6 tags drawn from
   the canonical 50, assigned at ingestion time (by the AI tagging pass for
   generated/stock images, by the human curator for manually-imported ones,
-  and by keyword-matched channel/search terms for Are.na pulls).
+  and by the matched keyword slug itself for a live Are.na result, which
+  is stored only when it's actually used to fill a respondent's deck —
+  see §5.1).
 - When a client picks 3 keywords, the deck is assembled by scoring each
   candidate image on keyword overlap (3/3 matches ranked highest, then 2/3,
   then 1/3) and sampling across sources so one platform doesn't dominate the

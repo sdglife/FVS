@@ -1,10 +1,16 @@
 #!/usr/bin/env tsx
 /**
- * CLI for running the automated image-source connectors (PRD §5.1).
+ * CLI for running the batch-ingestible image-source connectors (PRD §5.1).
  *
- *   npm run ingest -- --source arena --keyword minimal
  *   npm run ingest -- --source stock_unsplash --all
  *   npm run ingest -- --source ai_generated --keyword brutalist
+ *
+ * Are.na is deliberately NOT here. Its Acceptable Use terms prohibit
+ * "automated crawling, systematic downloading of content, or any form of
+ * structured data harvesting" — exactly what a `--source arena --all`
+ * batch job would be, even with a valid token. Are.na is instead queried
+ * live, per respondent, inside lib/deck.ts (see lib/sources/arena.ts for
+ * the full reasoning) and is never pre-harvested into this table.
  *
  * Loads .env.local itself (this runs outside the Next.js server, so
  * process.env isn't populated by the framework).
@@ -14,14 +20,12 @@ config({ path: ".env.local" });
 
 import { KEYWORD_TAXONOMY } from "../src/lib/keywords";
 import { upsertImages } from "../src/lib/sources/common";
-import { arenaConnector } from "../src/lib/sources/arena";
 import { unsplashConnector } from "../src/lib/sources/unsplash";
 import { pexelsConnector } from "../src/lib/sources/pexels";
 import { aiGenerateConnector } from "../src/lib/sources/ai-generate";
 import type { SourceConnector } from "../src/lib/sources/common";
 
 const CONNECTORS: Record<string, SourceConnector> = {
-  arena: arenaConnector,
   stock_unsplash: unsplashConnector,
   stock_pexels: pexelsConnector,
   ai_generated: aiGenerateConnector,

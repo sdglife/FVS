@@ -1,39 +1,60 @@
-import { buildImage, type NewImage, type SourceConnector } from "@/lib/sources/common";
+import type { ImageRow } from "@/lib/types";
 
 /**
- * Are.na connector (PRD §5/§5.1) — the one platform with a real, sanctioned
- * public API for this use case. We search public channels for the keyword,
- * then pull image blocks from the best-matching channels.
+ * Are.na connector (PRD §5) — REWORKED from the original batch-ingest
+ * design after reading Are.na's own Acceptable Use clause in full:
  *
- * Compliance pattern (PRD §5 row 1): hotlink the original image URL, never
- * re-host it, and always carry a source_url back to the block/channel on
- * Are.na. See common.ts `buildImage`, which enforces usage_mode="hotlinked"
- * for this platform at the type level.
+ *   "This API is intended for building applications that integrate with
+ *   Are.na, not for scraping or bulk data collection. Automated crawling,
+ *   systematic downloading of content, or any form of structured data
+ *   harvesting is prohibited. If you need bulk access ... contact us."
  *
- * Docs: https://dev.are.na/documentation — base URL https://api.are.na/v2
+ * The earlier version of this file looped every keyword, pulled several
+ * channels' worth of blocks per keyword, and upserted them into our
+ * permanent `images` table — i.e. exactly the "systematic downloading" /
+ * "structured data harvesting" that clause rules out, regardless of
+ * having a valid token. Having a sanctioned API does not exempt bulk
+ * collection through it.
+ *
+ * This version instead queries Are.na LIVE, once per real swipe session,
+ * scoped to that one respondent's chosen keywords, for one bounded page —
+ * "building an application that integrates with Are.na," which the same
+ * clause explicitly welcomes. Results are hotlinked straight into that
+ * respondent's deck (lib/deck.ts) and are NOT persisted into the `images`
+ * table — there is deliberately no ingestion script for this source.
+ *
+ * API version: Are.na's own docs (dev.are.na) confirm the base URL is
+ * https://api.are.na and the current version is v3 (the token endpoint is
+ * api.are.na/v3/oauth/token). The exact per-field response shape below
+ * (search result item fields, channel `contents` block shape) is pieced
+ * together from partial public references, NOT a verified live response —
+ * this sandbox's network policy currently blocks api.are.na outright, so
+ * it hasn't been exercised against the real API yet. Treat the parsing
+ * below as a reasonable first pass to fix up against a real response the
+ * first time this runs with network access.
  */
 
-const ARENA_BASE = "https://api.are.na/v2";
-const CHANNELS_PER_KEYWORD = 5;
-const BLOCKS_PER_CHANNEL = 20;
+const ARENA_BASE = "https://api.are.na/v3";
+const DEFAULT_LIMIT = 24;
 
-interface ArenaChannelSearchResult {
-  channels: Array<{ slug: string; title: string }>;
-}
-
-interface ArenaBlock {
-  id: number;
-  class: string; // "Image" | "Text" | "Link" | ...
-  title: string | null;
+interface ArenaBlockLike {
+  id: number | string;
+  class?: string;
+  title?: string | null;
   image?: {
-    original: { url: string };
-    display: { url: string };
+    original?: { url?: string };
+    display?: { url?: string };
+    thumb?: { url?: string };
   };
-  user?: { slug: string };
+  user?: { slug?: string; username?: string };
+  channel?: { slug?: string };
+  connected_at?: string;
 }
 
-interface ArenaChannelContents {
-  contents: ArenaBlock[];
+interface ArenaSearchResponse {
+  data?: ArenaBlockLike[];
+  blocks?: ArenaBlockLike[]; // fallback key name, unconfirmed
+  meta?: { has_more_pages?: boolean };
 }
 
 function authHeaders(): HeadersInit {
@@ -44,64 +65,59 @@ function authHeaders(): HeadersInit {
   return { Authorization: `Bearer ${token}` };
 }
 
-async function searchChannels(query: string): Promise<ArenaChannelSearchResult> {
+/**
+ * Live search for one request's worth of image blocks matching a keyword.
+ * Called directly from lib/deck.ts at deck-assembly time — never from a
+ * batch/ingestion script. `limit` should be bounded to roughly what one
+ * respondent's deck needs for this keyword, not a large harvesting page.
+ */
+export async function searchArenaImages(
+  keywordLabel: string,
+  limit: number = DEFAULT_LIMIT
+): Promise<Omit<ImageRow, "id" | "created_at">[]> {
   const res = await fetch(
-    `${ARENA_BASE}/search/channels?q=${encodeURIComponent(query)}&per=${CHANNELS_PER_KEYWORD}`,
+    `${ARENA_BASE}/search?query=${encodeURIComponent(keywordLabel)}&type=Image&per=${Math.min(
+      limit,
+      DEFAULT_LIMIT
+    )}`,
     { headers: authHeaders() }
   );
-  if (!res.ok) {
-    throw new Error(`Are.na channel search failed: ${res.status} ${res.statusText}`);
+
+  if (res.status === 402 || res.status === 403) {
+    // The /v3/search endpoint is reported Premium-only on some Are.na
+    // tiers; a free/guest token may be rejected here. Fail loudly rather
+    // than silently returning nothing, so this doesn't look like "no
+    // matches" when it's actually "not entitled to search."
+    throw new Error(
+      `Are.na search returned ${res.status} — this token's tier may not include ` +
+        "/v3/search access. Falling back is not implemented; see arena.ts."
+    );
   }
-  return res.json();
-}
-
-async function getChannelContents(slug: string): Promise<ArenaChannelContents> {
-  const res = await fetch(
-    `${ARENA_BASE}/channels/${encodeURIComponent(slug)}/contents?per=${BLOCKS_PER_CHANNEL}`,
-    { headers: authHeaders() }
-  );
   if (!res.ok) {
-    throw new Error(`Are.na channel contents failed for "${slug}": ${res.status}`);
+    throw new Error(`Are.na search failed: ${res.status} ${res.statusText}`);
   }
-  return res.json();
+
+  const payload: ArenaSearchResponse = await res.json();
+  const blocks = payload.data ?? payload.blocks ?? [];
+
+  return blocks
+    .filter((b) => b.class === "Image" && b.image?.original?.url)
+    .map((b) => {
+      const sourceUrl = b.channel?.slug
+        ? `https://www.are.na/${b.user?.slug ?? b.user?.username ?? "channel"}/${b.channel.slug}`
+        : `https://www.are.na/block/${b.id}`;
+
+      return {
+        keywords: [], // caller (lib/deck.ts) attaches the matched keyword slug
+        custom_tags: [],
+        image_url: b.image!.original!.url!,
+        thumbnail_url: b.image?.display?.url ?? b.image?.thumb?.url ?? null,
+        source_platform: "arena" as const,
+        source_url: sourceUrl,
+        usage_mode: "hotlinked" as const,
+        generation_prompt: null,
+        license_credit: `via Are.na${b.user?.username ? ` · ${b.user.username}` : ""}`,
+        active: true,
+      };
+    });
 }
-
-export const arenaConnector: SourceConnector = {
-  platform: "arena",
-
-  async fetchForKeyword(keywordSlug, keywordLabel): Promise<NewImage[]> {
-    const { channels } = await searchChannels(keywordLabel);
-    const images: NewImage[] = [];
-
-    for (const channel of channels) {
-      let contents: ArenaChannelContents;
-      try {
-        contents = await getChannelContents(channel.slug);
-      } catch (err) {
-        console.warn(`Skipping Are.na channel "${channel.slug}": ${String(err)}`);
-        continue;
-      }
-
-      for (const block of contents.contents) {
-        if (block.class !== "Image" || !block.image) continue;
-
-        const sourceUrl = block.user
-          ? `https://www.are.na/${block.user.slug}/${channel.slug}`
-          : `https://www.are.na/block/${block.id}`;
-
-        images.push(
-          buildImage({
-            sourcePlatform: "arena",
-            imageUrl: block.image.original.url,
-            thumbnailUrl: block.image.display.url,
-            sourceUrl,
-            keywords: [keywordSlug],
-            licenseCredit: `via Are.na${block.user ? ` · ${block.user.slug}` : ""}`,
-          })
-        );
-      }
-    }
-
-    return images;
-  },
-};
