@@ -1,11 +1,16 @@
-# Taste Basket — Product Requirements Document
+# NVRFOUND Vibe Basket — Product Requirements Document
 
-**Status:** Draft v2 — for review
+**Status:** Draft v3 — for review
 **Owner:** TBD
-**Last updated:** 2026-10-02
-**Changelog:** v2 adds the multi-platform sourcing feasibility check (Are.na,
-Savee, Same.Energy, Cosmos.so) and switches deck-scoping from
-category-only to a **3-keyword selection** model.
+**Last updated:** 2026-10-04
+**Changelog:**
+- v2 added the multi-platform sourcing feasibility check (Are.na, Savee,
+  Same.Energy, Cosmos.so) and switched deck-scoping from category-only to a
+  **3-keyword selection** model.
+- v3 names the product **NVRFOUND Vibe Basket** and confirms scope: the
+  automated image backbone is Are.na + licensed stock + AI-generated only.
+  Cosmos.so and Pinterest were both evaluated as scrape targets and ruled
+  out — see §5.
 
 ## 1. Problem
 
@@ -123,6 +128,17 @@ of what we intend to do with the images afterward.
 | **Savee** | Has an official REST API *and* an MCP server. | Section 5 of Savee's ToS says explicitly: being able to see/search/fetch something via the app, API, or an AI assistant **gives you no right to copy, store, publish, or otherwise use it** — because Savee doesn't own the images either; they're saved from around the web by members. | **Do not ingest/store.** The API exists for querying *your own* Savee account's saves, not for building a third-party content index. Only viable path: manual, human-reviewed curation (§5.1), not automated. |
 | **Same.Energy** | **No public API.** Their own About page says selling API access is only "being considered." | No stated terms for bulk access because there's no access to grant. Scraping an unauthenticated, no-API visual search engine is squarely the kind of unauthorized automated collection most ToS (and site-protection measures) exist to stop. | **Not usable via automation.** Manual curation only, or wait/ask them directly about future API access. |
 | **Cosmos.so** | **No public API**, GraphQL introspection disabled. | ToS explicitly bans "using automated means to access, monitor, scrape, harvest, or collect data... including robots, spiders, crawlers, scrapers, or data-mining tools." Unofficial community wrappers exist but each one says the operator owns the ToS risk. | **Not usable**, same finding as the v1 PRD. |
+| **Pinterest** | Has an official Developer API, but it's scoped to login/content-publishing/ads integrations for approved apps, not bulk read access to other users' pins. | Pinterest's Terms of Service prohibit scraping/automated data collection from the site itself, separately from the API program. | **Not usable** for bulk ingestion. Same category as Cosmos.so. |
+
+**Cosmos.so and Pinterest were both specifically evaluated as scrape targets
+during this project and ruled out.** Both explicitly prohibit automated
+collection in their Terms of Service, and in both cases the underlying
+images are third parties' copyrighted work with no license trail, which
+doesn't change based on commercial intent or a "reference only" framing. No
+scraper, proxy, or unofficial wrapper (e.g. the community "Odyssey" client
+for Cosmos) was built against either platform, and none is planned. If
+volume from either becomes important later, the only path considered viable
+is asking the platform directly for API/data-partnership access (§5.1).
 
 ### 5.1 What we'll actually do
 
@@ -138,7 +154,7 @@ of what we intend to do with the images afterward.
    combination; we fully own these and can mint more on demand for whatever
    keyword pairs are thin on real images.
 
-**Manual-only, low-volume sources (Savee, Same.Energy, Cosmos.so):**
+**Manual-only, low-volume sources (Savee, Same.Energy, Cosmos.so, Pinterest):**
 A human curator browses these sites the normal way (as any visitor would),
 hand-picks individual images worth referencing, and manually tags +
 imports them one at a time into our index with source credit preserved.
@@ -146,15 +162,16 @@ This keeps a human editorial decision in the loop instead of automated bulk
 collection, which is the actual distinction their terms care about — but it
 is slow by design and won't scale to "50 keywords × many images each."
 Treat this as an optional slow-trickle supplement, not a launch dependency.
-If real volume from these three specifically matters, the clean way to get
-it is to ask each platform directly for a data-partnership/API arrangement
-— Same.Energy's own site already invites exactly that conversation.
+If real volume from these specifically matters, the clean way to get it is
+to ask each platform directly for a data-partnership/API arrangement —
+Same.Energy's own site already invites exactly that conversation.
 
-**What we will not do:** write an automated scraper against Savee,
-Same.Energy, or Cosmos.so. That's true regardless of commercial intent, and
-it's also just a fragile foundation — any of the three can rate-limit, IP-ban,
-or structurally change overnight with no recourse since we'd have no
-sanctioned access to fall back on.
+**What we will not do:** write an automated scraper, or use an unofficial
+wrapper/proxy (e.g. the community "Odyssey" client for Cosmos), against
+Savee, Same.Energy, Cosmos.so, or Pinterest. That's true regardless of
+commercial intent, and it's also just a fragile foundation — any of these
+can rate-limit, IP-ban, or structurally change overnight with no recourse
+since we'd have no sanctioned access to fall back on.
 
 ## 6. Content Model
 
