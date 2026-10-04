@@ -1,6 +1,6 @@
 # NVRFOUND Vibe Basket — Product Requirements Document
 
-**Status:** Draft v3 — for review
+**Status:** Draft v4 — decisions locked, ready to build
 **Owner:** TBD
 **Last updated:** 2026-10-04
 **Changelog:**
@@ -11,6 +11,10 @@
   automated image backbone is Are.na + licensed stock + AI-generated only.
   Cosmos.so and Pinterest were both evaluated as scrape targets and ruled
   out — see §5.
+- v4 locks the remaining open questions from v3's §10: single-creator admin
+  for v1, one link = one respondent, Next.js full-stack, and the
+  Savee/Same.Energy/Cosmos manual-curation trickle is in scope starting
+  Phase 1 rather than deferred. See §9–§11.
 
 ## 1. Problem
 
@@ -60,13 +64,18 @@ act on immediately.
 ## 4. Core Flows
 
 ### 4.1 Admin: create a session
-1. Admin logs in (simple email/password or magic link).
+1. Admin logs in (simple email/password or magic link). v1 is
+   **single-creator**: one admin account, no org/team model or per-tenant
+   data isolation (multi-tenant support is pushed to Phase 3 — see §11).
 2. Clicks "New Session" → enters project/client name (optional, for their
    own organization). No category/keyword setup needed here — the client
    picks their own keywords when they open the link (§4.2); this keeps the
    admin side to one click.
 3. Admin gets a shareable link (and QR code, since this is handed off in
-   person often).
+   person often). **One link = one respondent**: if a client has multiple
+   stakeholders who each need to swipe independently, the admin generates a
+   separate link per person (one click each) rather than sharing one link
+   around.
 4. Admin can see session status (not started / in progress / completed) and,
    once completed, open the results (§4.3).
 
@@ -161,10 +170,18 @@ imports them one at a time into our index with source credit preserved.
 This keeps a human editorial decision in the loop instead of automated bulk
 collection, which is the actual distinction their terms care about — but it
 is slow by design and won't scale to "50 keywords × many images each."
-Treat this as an optional slow-trickle supplement, not a launch dependency.
-If real volume from these specifically matters, the clean way to get it is
-to ask each platform directly for a data-partnership/API arrangement —
-Same.Energy's own site already invites exactly that conversation.
+
+**This manual trickle is in scope starting Phase 1** (per your call in
+§10/§11, not deferred to Phase 2): a curator works through it in parallel
+with the build, seeding a modest batch of real-world references across the
+highest-priority keywords while the automated sources (above) carry the
+bulk of the volume from day one. It stays a trickle, not a pipeline — no
+scraping tooling gets built for these four; it's manual labor with a simple
+internal import form (brand name/category/keywords/source link/credit) that
+feeds the same `Image record` shape as every other source. If real volume
+from these specifically matters later, the clean way to get it is to ask
+each platform directly for a data-partnership/API arrangement — Same.Energy's
+own site already invites exactly that conversation.
 
 **What we will not do:** write an automated scraper, or use an unofficial
 wrapper/proxy (e.g. the community "Odyssey" client for Cosmos), against
@@ -285,57 +302,65 @@ consistent.
   Savee/Same.Energy must show a small source credit/link, both during
   swiping and in the admin's final gallery export.
 
-## 9. Suggested tech stack
+## 9. Tech stack — **locked**
 
-Given this repo already uses **Vite + React** (see `flexible-visual-systems/`),
-v1 can reuse that pattern for consistency:
+**Next.js full-stack**, chosen over the repo's existing Vite+React pattern
+(`flexible-visual-systems/`) for a single framework covering frontend, API
+routes, and server logic:
 
-- Frontend: React + Vite, Framer Motion (or `react-tinder-card`) for the
-  swipe gesture, mobile-first CSS.
-- Backend: lightweight API (Node/Express or a BaaS like Supabase) + Postgres
-  for sessions/respondents/images; object storage (S3/Cloudinary) only for
-  images we're entitled to store a copy of (AI-generated, licensed stock,
-  manually-curated-with-credit) — Are.na-sourced images stay hotlinked, not
-  copied, per §5.
-- AI: one call per image set at ingestion (tagging) and one call per
+- **Framework**: Next.js (App Router), React for the swipe UI, Framer Motion
+  (or `react-tinder-card`) for the swipe gesture, mobile-first CSS.
+- **Data**: Supabase — Postgres for sessions/respondents/images, built-in
+  Auth for the single admin account, and Storage for images we're entitled
+  to store a copy of (AI-generated, licensed stock, manually-curated-with-
+  credit). Are.na-sourced images stay hotlinked, not copied, per §5.
+- **API**: Next.js route handlers / server actions for session creation,
+  deck assembly (keyword matching, §6.2), swipe recording, and summary
+  generation — no separate backend service.
+- **AI**: one call per image batch at ingestion (tagging) and one call per
   completed respondent (summary generation); embeddings for custom-keyword
   matching (§6.2).
-- Hosting: single-click deploy (Vercel/Netlify) to match the "shareable web
-  app" requirement from the brief.
+- **Hosting**: Vercel — native fit for Next.js, one-click deploy, matches
+  the "shareable web app" requirement from the brief.
 
-This is a recommendation, not a decision — flag in §10 if you want a
-different stack (e.g. Next.js full-stack instead of separate FE/BE).
+This is now a decision, not a recommendation — it lives in its own
+`vibe-basket/` project folder independent of `flexible-visual-systems/`'s
+Vite setup.
 
-## 10. Open questions for you
+## 10. Decisions log
 
-1. **Keyword list**: does the §6.1 starter list of 50 look right, or do you
-   want to swap categories in/out before we lock it (it's the main taxonomy
-   everything else hangs off)?
-2. **Savee/Same.Energy/Cosmos volume**: are you okay with these three being
-   a slow, manually-curated trickle (per §5.1) rather than a bulk source, at
-   least for v1? If you need real volume from them, the honest next step is
-   reaching out to those platforms directly, not scraping.
-3. **Attribution UI**: comfortable with visible "via Are.na / source" credit
-   chips on swipe cards, or would that clutter the swipe experience too much?
-4. **Admin auth**: single-creator (just you) for now, or multi-tenant from
-   day one?
-5. **Session reuse**: one link = one respondent, or should a link support
-   multiple respondents (e.g. several stakeholders at the same client)?
-6. **Stack preference**: comfortable with the React/Vite + Supabase/Postgres
-   recommendation in §9, or do you want Next.js / something else?
+All of v3's open questions are resolved. Keeping this as a log rather than
+deleting it so the "why" stays attached to the PRD.
+
+| # | Topic | Decision |
+|---|---|---|
+| 1 | Keyword list (§6.1) | Ship the 50-keyword starter list as-is; tune individual terms after real sessions show what gets picked vs. ignored. |
+| 2 | Savee/Same.Energy/Cosmos/Pinterest volume (§5.1) | Manual-curation trickle **is in scope for Phase 1**, run in parallel with the build — not deferred, but still never automated. |
+| 3 | Attribution UI (§8) | Small, unobtrusive source-credit chip (e.g. "via Are.na") on sourced cards, visible during swiping and in the admin export. |
+| 4 | Admin auth (§4.1) | Single-creator for v1. No org/team model; multi-tenant deferred to Phase 3. |
+| 5 | Session reuse (§4.1) | One link = one respondent. Multiple stakeholders → admin issues multiple links. |
+| 6 | Stack (§9) | Next.js full-stack + Supabase + Vercel, locked. |
+
+Nothing is currently open. If anything in this log stops fitting once we're
+building (e.g. the keyword list needs reshaping, or single-respondent links
+turn out to be annoying in practice), raise it and we'll amend this log
+rather than silently drifting from it.
 
 ## 11. Phased plan
 
 - **Phase 1 (MVP)**: registration → keyword picker → swipe → liked gallery +
-  AI summary. Image pool from Are.na API + licensed stock + AI-generated
-  only (fully automatable sources). 50-keyword list locked. Single admin.
-- **Phase 2**: manual-curation pipeline/tooling for Savee/Same.Energy/Cosmos
-  trickle-feed, admin dashboard polish, PDF/share export, resumable
-  sessions, QR code sharing.
+  AI summary. Automated image pool from Are.na API + licensed stock +
+  AI-generated, **plus** the manual-curation trickle from Savee/Same.Energy/
+  Cosmos.so/Pinterest running in parallel (§5.1). 50-keyword list locked.
+  Single admin, one-link-one-respondent. Next.js + Supabase + Vercel.
+- **Phase 2**: admin dashboard polish, PDF/share export of the summary,
+  resumable sessions, QR code sharing, lightweight internal tooling for the
+  manual-curation import form (still not automated scraping — just making
+  the human curator's job faster).
 - **Phase 3**: multi-tenant admin accounts, white-labeling, richer tag
   taxonomy, in-house image library uploads per agency, direct API/data
-  partnership outreach to Same.Energy/Savee if volume from them becomes
-  important.
+  partnership outreach to Same.Energy/Savee/Pinterest if volume from them
+  becomes important.
 
 ## 12. Success metrics
 
