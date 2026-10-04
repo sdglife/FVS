@@ -197,23 +197,26 @@ since we'd have no sanctioned access to fall back on.
 Grouped for reference; the client just sees a flat searchable grid of 50 and
 picks 3.
 
-- **Mood:** Minimal, Maximal, Moody, Playful, Elegant, Raw, Whimsical,
-  Nostalgic, Futuristic, Serene, Bold, Romantic
-- **Palette:** Monochrome, Pastel, Vibrant, Muted, Earthy, Jewel-tone,
+- **Mood (10):** Minimal, Maximal, Moody, Playful, Elegant, Raw, Nostalgic,
+  Futuristic, Serene, Bold
+- **Palette (8):** Monochrome, Pastel, Vibrant, Muted, Earthy, Jewel-tone,
   Black & White, Neon
-- **Texture/Material:** Organic, Industrial, Handmade, Glossy, Matte, Grainy,
-  Textured, Natural
-- **Era/Style:** Vintage, Retro-futurist, Brutalist, Art Deco, Y2K,
+- **Texture/Material (8):** Organic, Industrial, Handmade, Glossy, Matte,
+  Grainy, Textured, Natural
+- **Era/Style (8):** Vintage, Retro-futurist, Brutalist, Art Deco, Y2K,
   Scandinavian, Mid-century, Contemporary
-- **Composition:** Geometric, Asymmetric, Layered, Clean/Grid-based,
-  Collage, Negative-space-heavy
-- **Lighting:** High-contrast, Soft/diffused, Golden-hour, Studio-lit,
+- **Composition (5):** Geometric, Asymmetric, Layered, Clean/Grid-based,
+  Negative-space-heavy
+- **Lighting (5):** High-contrast, Soft/diffused, Golden-hour, Studio-lit,
   Shadow-play
-- **Tone:** Luxury, Approachable, Experimental, Editorial, Corporate/Polished,
-  Street/Underground, Sustainable/Natural, Tech-forward
+- **Tone (6):** Luxury, Approachable, Experimental, Editorial,
+  Corporate/Polished, Tech-forward
 
-(50 slots total — final list is easy to tune after the first few client
-sessions show which keywords actually get picked vs. ignored.)
+(50 exactly — the original draft of this list actually listed 55; trimmed
+Whimsical, Romantic, Collage, Street/Underground, and Sustainable/Natural
+as the most overlapping-with-others entries to get to a true 50, to match
+`src/lib/keywords.ts`, the actual source of truth. Easy to tune further
+after the first few client sessions show what gets picked vs. ignored.)
 
 ### 6.2 Keyword → image matching
 
