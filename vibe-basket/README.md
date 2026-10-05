@@ -42,6 +42,23 @@ npm run dev
 Visit `/admin`, sign in, create a session, open its share link in another
 tab (or on your phone) to try the client flow.
 
+## Installing as an app (PWA)
+
+The app ships a Web App Manifest (`src/app/manifest.ts`) and generated
+icons (`src/app/icon.tsx`, `apple-icon.tsx`, and the dedicated
+`manifest-icon-*.png` routes — all built from the shared design in
+`src/lib/brand-icon.tsx`), so once it's deployed to a real HTTPS URL you
+can "Add to Home Screen" on Android or iOS for an app-like icon and a
+chrome-less standalone window — no app store, no APK, no separate codebase.
+`start_url` points at `/admin`, since the creator installing this on their
+phone is the main use case (clients still just get a plain link — making
+them install anything before swiping would work against the point).
+
+This is as far as "mobile app" goes for now. A real `.apk` (via a Trusted
+Web Activity wrapping this same deployed URL) is a later, optional step —
+it needs the app live first, since a TWA wraps a real origin, not local
+code.
+
 ## Populating real images
 
 ```bash
